@@ -1,221 +1,152 @@
-# BatchData Property Search — Google Sheets Case Study
+# Google Sheets Property Search Case Study
 
-## Project Summary
+[![LinkedIn](https://img.shields.io/badge/LinkedIn-View%20Profile-blue?logo=linkedin&style=flat-square)](https://www.linkedin.com/in/muhammad-taha-b88807248)
+[![GitHub](https://img.shields.io/badge/GitHub-View%20Profile-black?logo=github&style=flat-square)](https://github.com/muhammad-taha)
+[![Kaggle](https://img.shields.io/badge/Kaggle-Profile-orange?logo=kaggle&style=flat-square)](https://www.kaggle.com)
 
-This repository is a production-ready Google Apps Script integration that converts the BatchData Property Search API into a self-serve lead-generation workflow inside Google Sheets.
+![Project Thumbnail](image/banner.png)
 
-The script provides a complete user experience from filter configuration and payload preview to result ingestion, deduplication, and runtime logging. It is designed for teams that need a low-code property data pipeline without building a separate web application.
+## Overview
 
-## Why this solution exists
+This case study describes a Google Sheets automation workflow that turns a property data API into a structured data collection and lead-generation pipeline.
 
-BatchData provides rich property, mortgage, foreclosure, valuation, and contact data via API. This project solves a common need:
+It is written for developers, analysts, and product stakeholders who want to understand how to build a low-code data ingestion system with strong deduplication, state management, and debug tooling.
 
-- turn API output into structured spreadsheet output
-- avoid duplicate leads across repeated runs
-- preserve a persistent search offset for continuous collection
-- let non-technical users control searches through a sheet UI
+## Problem Statement
+
+Real estate analytics teams frequently need to collect and qualify property leads using large external datasets.
+
+Existing solutions often require separate ETL pipelines, BI tools, or custom web apps. This case study demonstrates how to implement the same capability entirely inside Google Sheets, making it accessible to business users while preserving a technical audit trail.
+
+## Solution Summary
+
+The workflow is designed around three key requirements:
+
+- easy filter-driven search configuration inside a spreadsheet
+- single-request integration to limit API usage and maintain predictable billing
+- robust deduplication and offset tracking for ongoing data collection
+
+The solution delivers a compact, developer-friendly pattern for spreadsheet-backed automation.
+
+## Visuals
+
+### Filter UI
+
+![Filter UI](image/filters%20page.png)
+
+### Thumbnail
+
+![Project Thumbnail](image/banner.png)
 
 ## Architecture
 
-The implementation is a single Google Apps Script project attached to a Google Sheet. It uses the following architectural components:
+### Functional Layers
 
-- `onOpen()` to inject a custom menu into Google Sheets
-- `setupSheets()` to create and format three worksheets:
-  - `🔎 Filters`
-  - `📋 Results`
-  - `📝 Run Log`
-- a filter-driven payload generator for BatchData property search
-- a single-request fetcher to minimize API billing
-- deduplication using APN, BatchData Property ID, and address hash
-- runtime state stored in `PropertiesService` for skip-offset tracking
-- separate debug helpers to inspect payloads, individual record fields, and raw API responses
+- **UI layer**: a custom Google Sheets menu and filter sheet
+- **Payload layer**: transforms sheet values into structured API search criteria
+- **API layer**: executes the HTTP request, handles responses, and normalizes the returned data
+- **Storage layer**: writes normalized rows into a results view and logs run history
+- **State layer**: maintains a persistent offset and dedup sets for continuous ingestion
 
-## Project Files
+### Data Flow
 
-- `Code_v2_final.gs` — recommended current implementation (v2.1)
-- `Code_v2.gs` — alternate v2.0 implementation with a different column layout and filter model
-- `Code.gs` — legacy v1 implementation for reference
-- `SETUP_GUIDE.md` — deployment and user onboarding notes
-- `README.md` — this case study
+1. user enters filter values in the spreadsheet
+2. the system builds a payload for the property search endpoint
+3. a single API call is made for that run
+4. returned records are cleaned, normalized, and deduplicated
+5. new rows are appended to the results table and the run is logged
 
-## Technical Scope
+## Technical Highlights
 
-This script supports:
+### Filter Construction
 
-- location filtering by State / County / City / Zip Code(s)
-- property classification filters such as property use and property value ranges
-- loan and mortgage filters including loan amount, loan origin date, loan type, and interest rate
-- optional skip-trace contact enrichment via BatchData
-- results normalization into a sheet-friendly layout
-- deduplication and smart offset handling so the same record is not fetched twice
-- previewing request payloads before spending API credits
+The filter UI supports structured search inputs such as:
 
-## Implementation Details
+- location filters: state, county, city, zip codes
+- property classification: use, type, zoning
+- valuation and price ranges
+- loan characteristics: amount, origination age, interest rate, loan type
+- optional contact enrichment for email and phone data
 
-### Filter to Payload Mapping
+The payload generator maps these values into API operators like `equals`, `inList`, `min`, `max`, and `minDate`.
 
-The script transforms sheet controls into BatchData search criteria with path-based operators. Key mappings include:
+### Deduplication Strategy
 
-- `address` filters → structured `searchCriteria.address` operators
-- `valuation.estimatedValue` → property value range filters
-- `sale.lastSalePrice` → purchase price range filters
-- `openLien.totalOpenLienBalance` → loan amount filters
-- `openLien.originationDate` → loan origination date filters
-- `openLien.firstLoanInterestRate` → interest rate thresholds
-- `openLien.firstLoanType` → loan type equality checks
-- `options.skipTrace` → optional contact enrichment
+This workflow avoids duplicate rows through multi-key deduplication:
 
-### Deduplication
+- property identifier values from the API
+- APN / parcel numbers
+- address hash keys
 
-Duplicate prevention is implemented both server-side and client-side:
+The system also sends existing property IDs back to the API as exclusions where supported. This prevents repeated billing for the same properties across runs.
 
-- existing `Property ID` values are sent in `ids.propertyId.notInList`
-- known APN values and address hashes are also tracked for client-side dedup
-- `Results` rows store dedup keys alongside each record so the exclusion set is persistent
+### Persistent Offset Tracking
 
-This reduces the chance of billing the API for the same lead more than once.
+To support continuous data collection, the system stores a run offset in script-managed properties.
 
-### Skip Offset
+- the offset initializes from existing result rows on first use
+- it increments by the number of fetched rows after each run
+- it can be reset or recalibrated if needed
 
-The script stores a persistent offset value in `PropertiesService` under the key `SKIP_TOTAL`.
+This enables the workflow to progressively consume new records without starting over.
 
-- On first run, the offset initializes from the current `Results` row count
-- After each API fetch, the offset advances by the count of fetched records
-- `resetSearchOffset()` can resynchronize the offset with current results
+### Data Normalization
 
-This allows repeated runs to sequentially consume new records from the API.
+Returned API records are flattened into a table schema optimized for analysis and CRM export.
 
-### Result Mapping
+Key normalized output fields include:
 
-The `Results` sheet is intentionally formatted to match a client-specific data layout.
+- owner first/last name, mailing address, emails, phones
+- property address, APN, type/use/zoning
+- valuation, equity, and loan terms
+- foreclosure and mortgage release details
+- transfer dates and previous owners
 
-`Code_v2_final.gs` writes 38 columns in this order:
+The normalization layer includes data sanitization for inconsistent records, such as:
 
-- Owner details: first/last name, mailing address, up to 3 emails and phones
-- Property details: address, APN, property type/use/zoning
-- Valuation: estimated value, equity
-- Loan details: lender, lender type, amount, interest rate, loan type, recording/maturity dates
-- Mortgage release and foreclosure fields
-- Transfer history, previous owners, and pull metadata
-- hidden dedup columns: `Property ID`, `Address Hash`
+- mixed-format owner names
+- variable email / phone array structures
+- missing numeric values and date-like payload artifacts
 
-### Mock Mode and Testing
+### Debug & Testing Support
 
-The project includes self-contained mock responses to let developers verify behavior without API charges.
+The solution includes built-in developer tools:
 
-- `MOCK_MODE = true` returns sample records
-- `previewPayload()` renders the exact JSON payload in the `🔧 Debug` sheet
-- `inspectFields()` / `inspectDedupFields()` fetch a single record to validate API field paths
+- payload preview without invoking the API
+- single-record field inspection for schema validation
+- raw response dump for troubleshooting
+- mock mode for safe testing without live API calls
 
-### Debug Tools
+These tools are valuable for onboarding new developers and confirming integration behavior before enabling production access.
 
-The script provides utility actions via the custom menu:
+## Lessons for Developers
 
-- `Preview Payload (FREE)` — shows the request body without calling the API
-- `Inspect Fields` — fetches one record and lists important field paths
-- `Debug: Show Raw API Response` — writes the raw HTTP response to the debug sheet
-- `Clear Results Only` — removes results while preserving sheet structure
-- `Reset Search Offset` — recalculates or resets the skip offset
+This case study presents several reusable patterns:
 
-## Setup Instructions
+- use spreadsheets as a lightweight front-end for API-driven workflows
+- separate UI/filter state from persistent ingestion state
+- prefer single-request runs when API billing is per call
+- enforce deduplication both before and after data ingestion
+- include debug routes that expose payloads and raw response structure
 
-### 1. Create the Google Sheet
+## Repository Contents
 
-- Open [Google Sheets](https://sheets.google.com)
-- Create a blank spreadsheet
-- Open `Extensions → Apps Script`
-- Replace the default script with the chosen `.gs` file contents
-- Save and run `onOpen()` once to authorize the script
-- Refresh the sheet to expose the `BatchData Search` menu
+- this README as the full case study
+- two image assets used for portfolio presentation:
+  - `image/banner.png`
+  - `image/filters page.png`
 
-### 2. Configure the API Token
+No internal script files or API credentials are included.
 
-- Create a BatchData Server-Side token for `property-search`
-- Enable required datasets:
-  - Core Property Data
-  - Valuation
-  - Mortgage / Lien
-  - Deed / Sale History
-  - Contact Enrichment (if using Skip Trace)
-- Paste the key into `API_KEY` in the script
-- Use `MOCK_MODE = true` until you are ready to run production searches
+## Contact
 
-### 3. Run Setup
+**Muhammad Taha**
 
-- Choose `BatchData Search → ⚙ Setup Sheets`
-- This creates the filter, results, and log worksheets
-- The filter sheet includes prebuilt dropdowns and notes for each search parameter
+[![LinkedIn](https://img.shields.io/badge/LinkedIn-Profile-blue?logo=linkedin&style=flat-square)](https://www.linkedin.com/in/muhammad-taha-b88807248) [![GitHub](https://img.shields.io/badge/GitHub-Profile-black?logo=github&style=flat-square)](https://github.com/muhammad-taha) [![Kaggle](https://img.shields.io/badge/Kaggle-Profile-orange?logo=kaggle&style=flat-square)](https://www.kaggle.com)
 
-### 4. Execute a Search
+- Email: contact.taha2005@gmail.com
+- Portfolio: https://www.muhammadtahatech.me/
 
-- Configure filters on `🔎 Filters`
-- Use `Preview Payload (FREE)` to verify the request content
-- Run `▶ Run Search`
-- Inspect results on `📋 Results`
-- Review run history on `📝 Run Log`
+---
 
-## Result Columns
-
-The recommended `Code_v2_final.gs` results structure includes the following fields:
-
-- Owner First Name
-- Owner Last Name
-- Owner Mailing Address
-- Email 1 / Email 2 / Email 3
-- Phone 1 / Phone 2 / Phone 3
-- Property Address / City / County / State / Zip / APN
-- Property Type / Property Use / Property Zoning
-- Est. Property Value / Equity %
-- Loan Lender Name / Lender Type / Loan Amount / Loan Interest Rate
-- Loan Type / Recording Date / Loan Maturity Date
-- Mortgage Release Date / Mortgage Release Amount
-- Notice of Default Date / Notice of Sale Date / Notice of Lis Pendens Date / Notice of Rescission Date
-- Transfer of Ownership Date(s) / Previous Owner Name(s)
-- Date Pulled
-- Property ID / Address Hash
-
-## Troubleshooting
-
-### Common issues
-
-- `API key not set`: verify `API_KEY` is defined and not left as the placeholder value
-- `Setup Sheets first`: run `BatchData Search → ⚙ Setup Sheets`
-- `0 records returned`: broaden filters or verify token dataset privileges
-- `HTTP 401`: invalid or expired API key
-- `HTTP 403`: missing BatchData access rights or insufficient account balance
-- dedup behavior not working: confirm the `Property ID` and `Address Hash` columns are populated in `📋 Results`
-
-### Data quality notes
-
-- The script sanitizes numeric fields to reject date-like values in amount fields
-- Interest rate values above 50% are treated as invalid and discarded
-- Records without an `_id` or `address.street` are filtered out as junk
-
-## Production considerations
-
-- Do not commit `API_KEY` values to source control
-- Use App Script project properties or another secure secret store for secrets in collaborative environments
-- Confirm the token's enabled datasets before switching from `MOCK_MODE`
-- Run a small pilot search first to verify filters and avoid unnecessary credit usage
-
-## Future enhancements
-
-Potential next steps for the project:
-
-- add CRM export/trigger integration (e.g. Zapier, Make, or direct CRM API)
-- support additional BatchData `property-search` filters
-- centralize configuration into a dedicated script properties panel
-- support incremental delta sync with timestamp-based updates
-- add sheet-level validation for required filter fields
-
-## Why this is a strong profile project
-
-- demonstrates full-stack scripting inside Google Sheets
-- shows real API integration and business-data modeling
-- includes production-grade features like deduplication, logging, and mock testing
-- is readable, maintainable, and easy to deploy for non-technical users
-
-## Notes
-
-- This case study is based on the current workspace contents and the most up-to-date implementation in `Code_v2_final.gs`.
-- Confidential API credentials were intentionally excluded from this document.
+*This case study is intentionally written as a standalone technical presentation. It omits source code and confidential API details while preserving meaningful engineering insights.*
