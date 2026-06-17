@@ -138,7 +138,7 @@ No internal script files or API credentials are included.
 
 **Muhammad Taha**
 
-[![LinkedIn](https://img.shields.io/badge/LinkedIn-Profile-blue?logo=linkedin&style=flat-square)](https://www.linkedin.com/in/muhammad-taha-b88807248) [![GitHub](https://img.shields.io/badge/GitHub-Profile-black?logo=github&style=flat-square)](https://github.com/muhammad-taha) [![Kaggle](https://img.shields.io/badge/Kaggle-Profile-orange?logo=kaggle&style=flat-square)]([https://www.kaggle.com](https://www.kaggle.com/muhammadtaha1038)
+[![LinkedIn](https://img.shields.io/badge/LinkedIn-Profile-blue?logo=linkedin&style=flat-square)](https://www.linkedin.com/in/muhammad-taha-b88807248) [![GitHub](https://img.shields.io/badge/GitHub-Profile-black?logo=github&style=flat-square)](https://github.com/muhammad-taha) [![Kaggle](https://img.shields.io/badge/Kaggle-Profile-orange?logo=kaggle&style=flat-square)]([https://www.kaggle.com](https://www.kaggle.com/muhammadtaha1038))
 
 - Email: contact.taha2005@gmail.com
 - Portfolio: https://www.muhammadtahatech.me/
