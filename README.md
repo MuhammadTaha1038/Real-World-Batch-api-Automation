@@ -1,8 +1,6 @@
 # Google Sheets Property Search Case Study
 
-[![LinkedIn](https://img.shields.io/badge/LinkedIn-View%20Profile-blue?logo=linkedin&style=flat-square)](https://www.linkedin.com/in/muhammad-taha-b88807248)
-[![GitHub](https://img.shields.io/badge/GitHub-View%20Profile-black?logo=github&style=flat-square)](https://github.com/muhammad-taha)
-[![Kaggle](https://img.shields.io/badge/Kaggle-Profile-orange?logo=kaggle&style=flat-square)](https://www.kaggle.com)
+ 
 
 ![Project Thumbnail](image/banner.png)
 
@@ -34,9 +32,7 @@ The solution delivers a compact, developer-friendly pattern for spreadsheet-back
 
 ![Filter UI](image/filters%20page.png)
 
-### Thumbnail
-
-![Project Thumbnail](image/banner.png)
+ 
 
 ## Architecture
 
